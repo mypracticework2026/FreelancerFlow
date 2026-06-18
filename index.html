@@ -559,7 +559,7 @@ function renderInvoices(){
       <td>${statusPill(status)}</td>
     </tr>`;
   }).join('');
-  document.getElementById('inv-outstanding').textContent = 'PKR '+outstanding.toLocaleString();
+  document.getElementById('inv-outstanding').textContent = 'USD '+outstanding.toLocaleString();
   document.getElementById('inv-overdue').textContent = overdueCount;
   document.getElementById('inv-total').textContent = data.length;
   document.getElementById('inv-reminders').textContent = reminders;
