@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreelanceFlow Control Center</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #F4F6FA;
+  color: #1F2A3D;
+  min-height: 100vh;
+}
+.shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 230px;
+  background: #0B2545;
+  color: #fff;
+  flex-shrink: 0;
+  padding: 24px 18px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sb-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 34px; padding: 0 6px; }
+.sb-logo-mark { width: 30px; height: 30px; border-radius: 8px; background: #E8763C; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sb-logo-mark svg { width: 17px; height: 17px; }
+.sb-logo-text { font-size: 16px; font-weight: 600; }
+.sb-nav { display: flex; flex-direction: column; gap: 2px; }
+.sb-item {
+  display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 9px;
+  font-size: 13.5px; color: #AEB9CC; cursor: pointer; transition: background .12s; border: none;
+  background: transparent; width: 100%; text-align: left; font-family: inherit;
+}
+.sb-item i { font-size: 18px; flex-shrink: 0; }
+.sb-item:hover { background: #14315A; color: #fff; }
+.sb-item.active { background: #fff; color: #0B2545; font-weight: 600; }
+.sb-item.active i { color: #E8763C; }
+.sb-spacer { height: 18px; }
+
+.main { flex: 1; min-width: 0; }
+.topbar {
+  background: #fff; border-bottom: 1px solid #E7EAF0; padding: 14px 28px;
+  display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10;
+}
+.search-box {
+  flex: 1; max-width: 420px; display: flex; align-items: center; gap: 8px;
+  background: #F4F6FA; border-radius: 9px; padding: 8px 14px; color: #8A93A6; font-size: 13px;
+}
+.search-box i { font-size: 16px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; margin-left: auto; }
+.tb-icon { position: relative; color: #5B6477; font-size: 19px; cursor: pointer; }
+.tb-dot { width: 8px; height: 8px; border-radius: 50%; background: #E8763C; position: absolute; top: -2px; right: -2px; border: 1.5px solid #fff; }
+.tb-profile { display: flex; align-items: center; gap: 9px; }
+.tb-avatar { width: 32px; height: 32px; border-radius: 50%; background: #DCE6FA; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0B2545; }
+.tb-name { font-size: 13px; font-weight: 600; color: #1F2A3D; }
+.tb-role { font-size: 11px; color: #8A93A6; }
+
+.container { padding: 26px 28px 60px; max-width: 1320px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 10px; }
+.greet { font-size: 21px; font-weight: 600; }
+.greet-sub { font-size: 13px; color: #8A93A6; margin-top: 4px; }
+.page-date { font-size: 12.5px; color: #185FA5; font-weight: 600; }
+
+.panel { background: #EEF1FB; border-radius: 16px; padding: 20px 22px; margin-bottom: 20px; }
+.panel-title { font-size: 14.5px; font-weight: 600; color: #1F2A3D; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+.panel-title .see-all { font-size: 12px; color: #E8763C; font-weight: 600; cursor: pointer; }
+
+.overview-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.ov-card { background: #fff; border-radius: 13px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; }
+.ov-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+.ov-icon.red { background: #FCEAEA; color: #C0392B; }
+.ov-icon.blue { background: #E6F1FB; color: #185FA5; }
+.ov-icon.green { background: #E1F5EE; color: #0F6E56; }
+.ov-label { font-size: 12px; color: #8A93A6; }
+.ov-val { font-size: 22px; font-weight: 600; color: #1F2A3D; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.white-card { background: #fff; border-radius: 16px; padding: 18px 20px; }
+.wc-title { font-size: 14.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.wc-title .see-all { font-size: 12px; color: #E8763C; font-weight: 600; cursor: pointer; }
+
+.list-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0F2F7; }
+.list-row:last-child { border-bottom: none; }
+.lr-icon { width: 36px; height: 36px; border-radius: 9px; background: #F4F6FA; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #185FA5; flex-shrink: 0; }
+.lr-main { flex: 1; min-width: 0; }
+.lr-title { font-size: 13.5px; font-weight: 600; color: #1F2A3D; }
+.lr-sub { font-size: 11.5px; color: #8A93A6; margin-top: 1px; }
+.lr-right { font-size: 13px; font-weight: 600; color: #0F6E56; text-align: right; }
+.lr-view { font-size: 12px; color: #185FA5; font-weight: 600; cursor: pointer; }
+
+.chart-wrap { position: relative; height: 230px; }
+
+.right-col { display: flex; flex-direction: column; gap: 16px; }
+
+.deadline-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid #F0F2F7; gap: 10px; }
+.deadline-row:last-child { border-bottom: none; }
+.dl-title { font-size: 13px; font-weight: 600; color: #1F2A3D; }
+.dl-sub { font-size: 11.5px; color: #8A93A6; margin-top: 2px; }
+.dl-days { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.dl-urgent { color: #C0392B; }
+.dl-soon { color: #C77B1E; }
+.dl-ok { color: #185FA5; }
+
+.activity-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0F2F7; }
+.activity-row:last-child { border-bottom: none; }
+.act-time { font-size: 11px; color: #8A93A6; min-width: 64px; flex-shrink: 0; }
+.act-text { font-size: 13px; color: #1F2A3D; flex: 1; }
+.act-view { font-size: 12px; color: #185FA5; font-weight: 600; cursor: pointer; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 11.5px; color: #8A93A6; font-weight: 600; padding: 0 10px 10px; border-bottom: 1px solid #EEF0F5; white-space: nowrap; }
+td { padding: 12px 10px; border-bottom: 1px solid #F4F6FA; vertical-align: middle; color: #1F2A3D; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #FAFBFD; }
+
+.pill { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+.pg { background: #E1F5EE; color: #0F6E56; }
+.pa { background: #FCEFD9; color: #8A5A0A; }
+.pr { background: #FCEAEA; color: #B23B3B; }
+.pb { background: #E7F0FC; color: #1F66B0; }
+.pn { background: #EEF1F5; color: #5B6477; }
+.pp { background: #F0EDFB; color: #4A3FB0; }
+
+.score-wrap { display: flex; align-items: center; gap: 7px; min-width: 90px; }
+.score-bar { height: 5px; border-radius: 3px; background: #EEF1F5; flex: 1; overflow: hidden; }
+.score-fill { height: 100%; border-radius: 3px; }
+.score-num { font-size: 12px; font-weight: 600; min-width: 20px; }
+.link-cell a { color: #185FA5; text-decoration: none; font-weight: 600; }
+.link-cell a:hover { text-decoration: underline; }
+.truncate { max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #5B6477; }
+
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.metric { background: #fff; border-radius: 14px; padding: 16px 18px; }
+.metric-label { font-size: 12px; color: #8A93A6; margin-bottom: 8px; }
+.metric-val { font-size: 24px; font-weight: 600; color: #1F2A3D; }
+.metric-sub { font-size: 11.5px; margin-top: 6px; color: #8A93A6; }
+
+.section-card { background: #fff; border-radius: 16px; padding: 20px 22px; }
+
+.empty { text-align: center; padding: 30px; color: #B0B7C3; font-size: 13px; }
+.loading { text-align: center; padding: 30px; color: #B0B7C3; font-size: 13px; }
+
+.portfolio-card { background: #fff; border-radius: 16px; padding: 20px 22px; margin-bottom: 14px; }
+.pf-date { font-size: 11.5px; color: #8A93A6; margin-bottom: 14px; font-weight: 600; }
+.pf-section { margin-bottom: 14px; }
+.pf-section:last-child { margin-bottom: 0; }
+.pf-label { font-size: 10.5px; font-weight: 700; color: #E8763C; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.pf-text { font-size: 13.5px; color: #1F2A3D; line-height: 1.6; }
+.copy-btn { font-size: 11.5px; padding: 6px 12px; border: 1px solid #E7EAF0; border-radius: 8px; background: transparent; cursor: pointer; color: #5B6477; font-family: inherit; margin-top: 10px; font-weight: 600; }
+.copy-btn:hover { background: #F4F6FA; }
+
+.email-card { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid #F0F2F7; }
+.email-card:last-child { border-bottom: none; }
+.email-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.email-main { flex: 1; min-width: 0; }
+.email-subject { font-size: 13.5px; font-weight: 600; color: #1F2A3D; }
+.email-from { font-size: 11.5px; color: #8A93A6; margin-top: 2px; }
+.email-preview { font-size: 12.5px; color: #5B6477; margin-top: 6px; line-height: 1.5; }
+
+@media (max-width: 1000px) {
+  .two-col { grid-template-columns: 1fr; }
+  .overview-cards { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .sidebar { display: none; }
+  .container { padding: 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg></div>
+      <span class="sb-logo-text">FreelanceFlow</span>
+    </div>
+    <div class="sb-nav">
+      <button class="sb-item active" onclick="nav('overview',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+      <button class="sb-item" onclick="nav('jobs',this)"><i class="ti ti-briefcase"></i>Jobs applied</button>
+      <button class="sb-item" onclick="nav('invoices',this)"><i class="ti ti-cash"></i>Invoices</button>
+      <button class="sb-item" onclick="nav('deadlines',this)"><i class="ti ti-calendar-time"></i>Deadlines</button>
+      <button class="sb-item" onclick="nav('inbox',this)"><i class="ti ti-mail"></i>Inbox classifier</button>
+      <button class="sb-item" onclick="nav('booster',this)"><i class="ti ti-rocket"></i>Career booster</button>
+      <button class="sb-item" onclick="nav('activity',this)"><i class="ti ti-history"></i>Recent activity</button>
+      <div class="sb-spacer"></div>
+      <button class="sb-item"><i class="ti ti-settings"></i>Settings</button>
+      <button class="sb-item"><i class="ti ti-logout"></i>Log out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="search-box"><i class="ti ti-search" aria-hidden="true"></i>Type keyword to search</div>
+      <div class="topbar-right">
+        <span class="tb-icon"><i class="ti ti-bell" aria-hidden="true"></i><span class="tb-dot" id="bellDot" style="display:none"></span></span>
+        <div class="tb-profile">
+          <div class="tb-avatar">AK</div>
+          <div>
+            <div class="tb-name">Ahmed Khan</div>
+            <div class="tb-role">WordPress developer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div id="page-overview" class="page active">
+        <div class="page-head">
+          <div>
+            <div class="greet" id="greetTitle">Good day, Ahmed</div>
+            <div class="greet-sub" id="greetSub">Loading your data...</div>
+          </div>
+          <div class="page-date" id="pageDate"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Project overview</div>
+          <div class="overview-cards">
+            <div class="ov-card"><div class="ov-icon red"><i class="ti ti-alert-circle" aria-hidden="true"></i></div><div><div class="ov-label">Overdue</div><div class="ov-val" id="ov-overdue">—</div></div></div>
+            <div class="ov-card"><div class="ov-icon blue"><i class="ti ti-refresh" aria-hidden="true"></i></div><div><div class="ov-label">Jobs applied</div><div class="ov-val" id="ov-jobs">—</div></div></div>
+            <div class="ov-card"><div class="ov-icon green"><i class="ti ti-circle-check" aria-hidden="true"></i></div><div><div class="ov-label">Invoices paid</div><div class="ov-val" id="ov-paid">—</div></div></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="white-card">
+            <div class="wc-title">Jobs applied for <span class="see-all" onclick="nav('jobs',document.querySelectorAll('.sb-item')[1])">See all</span></div>
+            <div id="ov-jobs-list"><div class="loading">Loading...</div></div>
+          </div>
+          <div class="white-card">
+            <div class="wc-title">Recent payments <span class="see-all" onclick="nav('invoices',document.querySelectorAll('.sb-item')[2])">See all</span></div>
+            <div id="ov-payments-list"><div class="loading">Loading...</div></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="white-card" style="grid-column: span 2;">
+            <div class="wc-title">Analysis — match score by application</div>
+            <div class="chart-wrap"><canvas id="analysisChart" role="img" aria-label="Line chart of job match scores over recent applications"></canvas></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="white-card">
+            <div class="wc-title">Upcoming deadlines <span class="see-all" onclick="nav('deadlines',document.querySelectorAll('.sb-item')[3])">See all</span></div>
+            <div id="ov-deadlines"><div class="loading">Loading...</div></div>
+          </div>
+          <div class="white-card">
+            <div class="wc-title">Recent activity <span class="see-all" onclick="nav('activity',document.querySelectorAll('.sb-item')[6])">See all</span></div>
+            <div id="ov-activity"><div class="loading">Loading...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-jobs" class="page">
+        <div class="page-head">
+          <div><div class="greet">Jobs applied for</div><div class="greet-sub">Every job your AI matched and applied to</div></div>
+        </div>
+        <div class="metrics-row">
+          <div class="metric"><div class="metric-label">Total applied</div><div class="metric-val" id="j-total">—</div></div>
+          <div class="metric"><div class="metric-label">Avg score</div><div class="metric-val" id="j-avg">—</div></div>
+          <div class="metric"><div class="metric-label">Top score</div><div class="metric-val" id="j-top">—</div></div>
+          <div class="metric"><div class="metric-label">Platforms</div><div class="metric-val" id="j-platforms">—</div></div>
+        </div>
+        <div class="section-card">
+          <div id="jobs-table"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <div id="page-invoices" class="page">
+        <div class="page-head">
+          <div><div class="greet">Invoices &amp; payments</div><div class="greet-sub">n8n sends follow-ups automatically — you never chase manually</div></div>
+        </div>
+        <div class="metrics-row">
+          <div class="metric"><div class="metric-label">Outstanding</div><div class="metric-val" id="inv-outstanding">—</div></div>
+          <div class="metric"><div class="metric-label">Overdue</div><div class="metric-val" id="inv-overdue">—</div></div>
+          <div class="metric"><div class="metric-label">Total invoices</div><div class="metric-val" id="inv-total">—</div></div>
+          <div class="metric"><div class="metric-label">Reminders sent</div><div class="metric-val" id="inv-reminders">—</div></div>
+        </div>
+        <div class="section-card">
+          <div id="invoices-table"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <div id="page-deadlines" class="page">
+        <div class="page-head">
+          <div><div class="greet">Upcoming deadlines</div><div class="greet-sub">Invoice due dates and follow-up windows pulled from your sheets</div></div>
+        </div>
+        <div class="section-card">
+          <div id="deadlines-full"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <div id="page-inbox" class="page">
+        <div class="page-head">
+          <div><div class="greet">Inbox classifier</div><div class="greet-sub">Every email classified by AI — only what matters reaches you</div></div>
+        </div>
+        <div class="metrics-row">
+          <div class="metric"><div class="metric-label">Total classified</div><div class="metric-val" id="inbox-total">—</div></div>
+          <div class="metric"><div class="metric-label">Urgent</div><div class="metric-val" id="inbox-urgent" style="color:#C0392B">—</div></div>
+          <div class="metric"><div class="metric-label">Payments</div><div class="metric-val" id="inbox-payment">—</div></div>
+          <div class="metric"><div class="metric-label">Scope creep</div><div class="metric-val" id="inbox-scope" style="color:#C77B1E">—</div></div>
+        </div>
+        <div class="section-card">
+          <div id="inbox-list"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <div id="page-booster" class="page">
+        <div class="page-head">
+          <div><div class="greet">Career booster — weekly portfolio log</div><div class="greet-sub">AI-generated trend insight, bio rewrite, and LinkedIn post — ready to copy</div></div>
+        </div>
+        <div id="portfolio-cards"><div class="loading">Loading...</div></div>
+      </div>
+
+      <div id="page-activity" class="page">
+        <div class="page-head">
+          <div><div class="greet">Recent activity</div><div class="greet-sub">Full timeline across jobs, invoices, and inbox</div></div>
+        </div>
+        <div class="section-card">
+          <div id="activity-full"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const IDS = {
+  jobs:      "1GhnGq8PYbBLjNpDA6E8PunoL9iszJ_NY9xR--WWnNI4",
+  invoices:  "1GQ71Iw3vHNJXvbQvZXcAm1h_cWhnWH_C20tu9BIzWHg",
+  inbox:     "1xHWbeZDgkFe_XoL-VJqiVYae00aAOuGoYitx-4nbAGw",
+  portfolio: "1EWyB6rwhWjZru7l8fVyjvQ-GbviHPCnl1eQljVleZKk"
+};
+const TAB = "Sheet1";
+const url = id => `https://opensheet.elk.sh/${id}/${TAB}`;
+
+function esc(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function parseAmt(v){ if(!v) return 0; const n=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+function scoreColor(s){ const n=Number(s); return n>=80?"#0F6E56":n>=60?"#C77B1E":"#8A93A6"; }
+function daysOverdue(d){ const dt=new Date(d); if(isNaN(dt)) return null; return Math.floor((new Date()-dt)/86400000); }
+function statusPill(s){
+  if(!s) return '<span class="pill pn">Unpaid</span>';
+  const l=s.toLowerCase();
+  if(l.includes('paid') && !l.includes('un')) return `<span class="pill pg">${esc(s)}</span>`;
+  if(l.includes('firm')) return `<span class="pill pr">${esc(s)}</span>`;
+  if(l.includes('gentle')||l.includes('sent')) return `<span class="pill pa">${esc(s)}</span>`;
+  return `<span class="pill pn">${esc(s)}</span>`;
+}
+function categoryPill(c){
+  if(!c) return '<span class="pill pn">Other</span>';
+  const l=c.toLowerCase();
+  if(l.includes('urgent')) return `<span class="pill pr">${esc(c)}</span>`;
+  if(l.includes('payment')) return `<span class="pill pg">${esc(c)}</span>`;
+  if(l.includes('scope')) return `<span class="pill pa">${esc(c)}</span>`;
+  if(l.includes('meeting')) return `<span class="pill pb">${esc(c)}</span>`;
+  if(l.includes('positive')) return `<span class="pill pg">${esc(c)}</span>`;
+  return `<span class="pill pn">${esc(c)}</span>`;
+}
+function categoryIcon(c){
+  const l=(c||'').toLowerCase();
+  if(l.includes('urgent')) return {icon:'ti-alert-triangle', bg:'#FCEAEA', color:'#C0392B'};
+  if(l.includes('payment')) return {icon:'ti-cash', bg:'#E1F5EE', color:'#0F6E56'};
+  if(l.includes('scope')) return {icon:'ti-arrows-diff', bg:'#FCEFD9', color:'#8A5A0A'};
+  if(l.includes('meeting')) return {icon:'ti-calendar-event', bg:'#E7F0FC', color:'#1F66B0'};
+  return {icon:'ti-mail', bg:'#EEF1F5', color:'#5B6477'};
+}
+function initials(name){
+  const parts = String(name||'?').trim().split(/\s+/);
+  return (parts[0]?.[0]||'?').toUpperCase() + (parts[1]?.[0]||'').toUpperCase();
+}
+
+let store = { jobs:[], invoices:[], inbox:[], portfolio:[] };
+
+async function fetchAll(){
+  const [jobs, invoices, inbox, portfolio] = await Promise.all([
+    fetch(url(IDS.jobs)).then(r=>r.json()).catch(()=>[]),
+    fetch(url(IDS.invoices)).then(r=>r.json()).catch(()=>[]),
+    fetch(url(IDS.inbox)).then(r=>r.json()).catch(()=>[]),
+    fetch(url(IDS.portfolio)).then(r=>r.json()).catch(()=>[])
+  ]);
+  store = { jobs, invoices, inbox, portfolio };
+  renderAll();
+}
+
+function greeting(){
+  const h = new Date().getHours();
+  if(h<12) return "Good morning";
+  if(h<18) return "Good afternoon";
+  return "Good evening";
+}
+
+function renderOverview(){
+  const jobs = [...store.jobs].reverse();
+  const scores = store.jobs.map(j=>Number(j['Score'])).filter(n=>!isNaN(n));
+
+  document.getElementById('greetTitle').textContent = greeting() + ", Ahmed";
+  document.getElementById('greetSub').textContent = "Have an amazing and productive time with ease";
+  document.getElementById('pageDate').textContent = new Date().toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});
+
+  let overdueCount = 0, paidCount = 0;
+  store.invoices.forEach(inv=>{
+    const status = (inv['Status']||'').toLowerCase();
+    const isPaid = status.includes('paid') && !status.includes('un');
+    if(isPaid) paidCount++;
+    const d = daysOverdue(inv['Due Date']);
+    if(!isPaid && d!==null && d>0) overdueCount++;
+  });
+  document.getElementById('ov-overdue').textContent = overdueCount;
+  document.getElementById('ov-jobs').textContent = store.jobs.length;
+  document.getElementById('ov-paid').textContent = paidCount;
+
+  document.getElementById('bellDot').style.display = (overdueCount>0) ? 'block' : 'none';
+
+  const jobsListEl = document.getElementById('ov-jobs-list');
+  if(!jobs.length){
+    jobsListEl.innerHTML = '<div class="empty">No jobs yet — your Job Hunter workflow will populate this.</div>';
+  } else {
+    jobsListEl.innerHTML = jobs.slice(0,3).map(j=>`
+      <div class="list-row">
+        <div class="lr-icon">${esc((j['Platform']||'?')[0])}</div>
+        <div class="lr-main"><div class="lr-title">${esc(j['Job Title'])}</div><div class="lr-sub">${esc(j['Platform'])} · score ${j['Score']||'—'}</div></div>
+        <div class="lr-view">View</div>
+      </div>`).join('');
+  }
+
+  const paidList = store.invoices.filter(i=>(i['Status']||'').toLowerCase().includes('paid') && !(i['Status']||'').toLowerCase().includes('un'));
+  const recentInv = [...store.invoices].reverse();
+  const paymentsEl = document.getElementById('ov-payments-list');
+  if(!recentInv.length){
+    paymentsEl.innerHTML = '<div class="empty">No invoices yet.</div>';
+  } else {
+    paymentsEl.innerHTML = recentInv.slice(0,3).map(inv=>`
+      <div class="list-row">
+        <div class="lr-icon">${initials(inv['Client Name'])}</div>
+        <div class="lr-main"><div class="lr-title">${esc(inv['Client Name'])}</div><div class="lr-sub">${esc(inv['Work Type'])}</div></div>
+        <div class="lr-right">PKR ${parseAmt(inv['Amount']).toLocaleString()}</div>
+      </div>`).join('');
+  }
+
+  const dlEl = document.getElementById('ov-deadlines');
+  const upcoming = store.invoices.map(inv=>{
+    const d = daysOverdue(inv['Due Date']);
+    return {inv, days: d};
+  }).filter(x=>x.days!==null).sort((a,b)=>a.days-b.days).slice(0,3);
+  if(!upcoming.length){
+    dlEl.innerHTML = '<div class="empty">No upcoming deadlines.</div>';
+  } else {
+    dlEl.innerHTML = upcoming.map(x=>{
+      const cls = x.days>0 ? 'dl-urgent' : x.days>-3 ? 'dl-soon' : 'dl-ok';
+      const label = x.days>0 ? `${x.days}d overdue` : `${Math.abs(x.days)}d left`;
+      return `<div class="deadline-row">
+        <div><div class="dl-title">Invoice — ${esc(x.inv['Work Type'])}</div><div class="dl-sub">${esc(x.inv['Client Name'])}</div></div>
+        <div class="dl-days ${cls}">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const actEl = document.getElementById('ov-activity');
+  let feed = [];
+  jobs.slice(0,2).forEach(j=>feed.push({time:j['Date']||'', text:`Proposal sent — ${esc(j['Job Title'])}`}));
+  [...store.inbox].reverse().slice(0,2).forEach(e=>feed.push({time:e['Date']||'', text:`${esc(e['Category']||'Email')} — ${esc(e['From'])}`}));
+  store.invoices.filter(i=>(i['Status']||'').toLowerCase().includes('sent')).slice(0,1).forEach(i=>feed.push({time:'', text:`${esc(i['Client Name'])} invoice — follow-up sent`}));
+  if(!feed.length){
+    actEl.innerHTML = '<div class="empty">No activity yet.</div>';
+  } else {
+    actEl.innerHTML = feed.slice(0,4).map(f=>`
+      <div class="activity-row"><div class="act-time">${esc(f.time)}</div><div class="act-text">${f.text}</div><div class="act-view">View</div></div>`).join('');
+  }
+
+  const chartScores = store.jobs.map(j=>Number(j['Score'])).filter(n=>!isNaN(n));
+  const labels = chartScores.map((_,i)=>'#'+(i+1));
+  if(window._analysisChart) window._analysisChart.destroy();
+  const ctx = document.getElementById('analysisChart');
+  window._analysisChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.length ? labels : ['No data'],
+      datasets: [{
+        data: chartScores.length ? chartScores : [0],
+        borderColor: '#E8763C',
+        backgroundColor: 'rgba(232,118,60,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#E8763C'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display:false }, ticks: { color:'#8A93A6', font:{size:11} } },
+        y: { min:0, max:100, grid: { color:'rgba(138,147,166,0.12)' }, ticks: { color:'#8A93A6', font:{size:11} } }
+      }
+    }
+  });
+}
+
+function renderJobs(){
+  const data = [...store.jobs].reverse();
+  const el = document.getElementById('jobs-table');
+  if(!data.length){ el.innerHTML='<div class="empty">No jobs logged yet.</div>'; return; }
+  const scores = store.jobs.map(j=>Number(j['Score'])).filter(n=>!isNaN(n));
+  const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const top = scores.length ? Math.max(...scores) : 0;
+  const platforms = [...new Set(store.jobs.map(j=>j['Platform']).filter(Boolean))].length;
+  document.getElementById('j-total').textContent = data.length;
+  document.getElementById('j-avg').textContent = avg;
+  document.getElementById('j-top').textContent = top;
+  document.getElementById('j-platforms').textContent = platforms;
+  let rows = data.map(j=>`<tr>
+    <td>${esc(j['Date'])}</td>
+    <td><strong>${esc(j['Job Title'])}</strong></td>
+    <td><span class="pill pn">${esc(j['Platform'])}</span></td>
+    <td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:${j['Score']||0}%;background:${scoreColor(j['Score'])}"></div></div><span class="score-num" style="color:${scoreColor(j['Score'])}">${j['Score']||'—'}</span></div></td>
+    <td class="link-cell">${j['Link']?`<a href="${esc(j['Link'])}" target="_blank">View ↗</a>`:''}</td>
+    <td class="truncate" title="${esc(j['Proposal'])}">${esc(j['Proposal'])}</td>
+  </tr>`).join('');
+  el.innerHTML = `<table><tr><th>Date</th><th>Job title</th><th>Platform</th><th>Score</th><th>Link</th><th>Proposal preview</th></tr>${rows}</table>`;
+}
+
+function renderInvoices(){
+  const data = store.invoices;
+  const el = document.getElementById('invoices-table');
+  if(!data.length){ el.innerHTML='<div class="empty">No invoices yet.</div>'; return; }
+  let outstanding=0, overdueCount=0, reminders=0;
+  let rows = data.map(inv=>{
+    const amt = parseAmt(inv['Amount']);
+    const status = inv['Status']||'';
+    const isPaid = status.toLowerCase().includes('paid') && !status.toLowerCase().includes('un');
+    if(!isPaid) outstanding += amt;
+    const days = daysOverdue(inv['Due Date']);
+    if(!isPaid && days!==null && days>0) overdueCount++;
+    if(status.toLowerCase().includes('sent')) reminders++;
+    let overdueLabel = '—';
+    if(!isPaid && days!==null){
+      overdueLabel = days>0 ? `<span style="color:#C0392B;font-weight:600">${days}d overdue</span>` : `<span style="color:#8A93A6">${Math.abs(days)}d left</span>`;
+    }
+    return `<tr>
+      <td><strong>${esc(inv['Client Name'])}</strong></td>
+      <td>${esc(inv['Work Type'])}</td>
+      <td>PKR ${amt.toLocaleString()}</td>
+      <td>${esc(inv['Due Date'])}</td>
+      <td>${overdueLabel}</td>
+      <td>${statusPill(status)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('inv-outstanding').textContent = 'PKR '+outstanding.toLocaleString();
+  document.getElementById('inv-overdue').textContent = overdueCount;
+  document.getElementById('inv-total').textContent = data.length;
+  document.getElementById('inv-reminders').textContent = reminders;
+  el.innerHTML = `<table><tr><th>Client</th><th>Work type</th><th>Amount</th><th>Due date</th><th>Days overdue</th><th>Status</th></tr>${rows}</table>`;
+}
+
+function renderDeadlines(){
+  const el = document.getElementById('deadlines-full');
+  const items = store.invoices.map(inv=>{
+    const d = daysOverdue(inv['Due Date']);
+    return {inv, days:d};
+  }).filter(x=>x.days!==null).sort((a,b)=>a.days-b.days);
+  if(!items.length){ el.innerHTML = '<div class="empty">No deadlines tracked yet.</div>'; return; }
+  el.innerHTML = items.map(x=>{
+    const cls = x.days>0 ? 'dl-urgent' : x.days>-3 ? 'dl-soon' : 'dl-ok';
+    const label = x.days>0 ? `${x.days} days overdue` : `${Math.abs(x.days)} days left`;
+    return `<div class="deadline-row">
+      <div><div class="dl-title">Invoice due — ${esc(x.inv['Work Type'])}</div><div class="dl-sub">${esc(x.inv['Client Name'])} · PKR ${parseAmt(x.inv['Amount']).toLocaleString()}</div></div>
+      <div class="dl-days ${cls}">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderInbox(){
+  const data = [...store.inbox].reverse();
+  const el = document.getElementById('inbox-list');
+  if(!data.length){ el.innerHTML='<div class="empty">No emails classified yet.</div>'; return; }
+  let urgent=0,payment=0,scope=0;
+  store.inbox.forEach(e=>{
+    const c=(e['Category']||'').toLowerCase();
+    if(c.includes('urgent')) urgent++;
+    if(c.includes('payment')) payment++;
+    if(c.includes('scope')) scope++;
+  });
+  document.getElementById('inbox-total').textContent = data.length;
+  document.getElementById('inbox-urgent').textContent = urgent;
+  document.getElementById('inbox-payment').textContent = payment;
+  document.getElementById('inbox-scope').textContent = scope;
+  el.innerHTML = data.map(e=>{
+    const ic = categoryIcon(e['Category']);
+    return `<div class="email-card">
+      <div class="email-icon" style="background:${ic.bg};color:${ic.color}"><i class="ti ${ic.icon}" aria-hidden="true"></i></div>
+      <div class="email-main">
+        <div class="email-subject">${esc(e['Subject'])}</div>
+        <div class="email-from">${esc(e['From'])} · ${esc(e['Date'])} ${categoryPill(e['Category'])}</div>
+        <div class="email-preview">${esc(e['Preview'])}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPortfolio(){
+  const data = [...store.portfolio].reverse();
+  const el = document.getElementById('portfolio-cards');
+  if(!data.length){ el.innerHTML='<div class="empty">No portfolio entries yet — generated every Monday.</div>'; return; }
+  el.innerHTML = data.map((p,i)=>`
+    <div class="portfolio-card">
+      <div class="pf-date">Week of ${esc(p['Date'])}</div>
+      <div class="pf-section"><div class="pf-label">Trend</div><div class="pf-text">${esc(p['Trend'])}</div></div>
+      <div class="pf-section"><div class="pf-label">Bio suggestion</div><div class="pf-text">${esc(p['Bio Suggestion'])}</div></div>
+      <div class="pf-section">
+        <div class="pf-label">LinkedIn post — ready to copy</div>
+        <div class="pf-text" id="post-${i}">${esc(p['LinkedIn Post'])}</div>
+        <button class="copy-btn" onclick="copyPost(${i})">Copy post</button>
+      </div>
+    </div>`).join('');
+}
+
+function copyPost(i){
+  const text = document.getElementById('post-'+i).textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btns = document.querySelectorAll('.copy-btn');
+    btns[i].textContent = 'Copied!';
+    setTimeout(()=>btns[i].textContent='Copy post', 1800);
+  });
+}
+
+function renderActivityFull(){
+  const el = document.getElementById('activity-full');
+  let feed = [];
+  [...store.jobs].reverse().forEach(j=>feed.push({time:j['Date']||'', text:`Proposal sent — ${esc(j['Job Title'])} (${esc(j['Platform'])})`}));
+  [...store.inbox].reverse().forEach(e=>feed.push({time:e['Date']||'', text:`${esc(e['Category']||'Email')} classified — ${esc(e['From'])}`}));
+  store.invoices.filter(i=>(i['Status']||'').toLowerCase().includes('sent')).forEach(i=>feed.push({time:'', text:`Follow-up sent — ${esc(i['Client Name'])}`}));
+  [...store.portfolio].reverse().forEach(p=>feed.push({time:p['Date']||'', text:'Weekly portfolio insight generated'}));
+  if(!feed.length){ el.innerHTML = '<div class="empty">No activity yet.</div>'; return; }
+  el.innerHTML = feed.map(f=>`<div class="activity-row"><div class="act-time">${esc(f.time)}</div><div class="act-text">${f.text}</div><div class="act-view">View</div></div>`).join('');
+}
+
+function renderAll(){
+  renderOverview();
+  renderJobs();
+  renderInvoices();
+  renderDeadlines();
+  renderInbox();
+  renderPortfolio();
+  renderActivityFull();
+}
+
+function nav(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+}
+
+fetchAll();
+</script>
+</body>
+</html>
